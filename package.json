@@ -1,0 +1,25 @@
+{
+  "name": "comp2140-chatbot-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RICK-MONK/COMP2140-Chatbot-Project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/RICK-MONK/COMP2140-Chatbot-Project/issues"
+  },
+  "homepage": "https://github.com/RICK-MONK/COMP2140-Chatbot-Project#readme",
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.34.2"
+  }
+}
