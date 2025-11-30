@@ -19,6 +19,10 @@
   },
   "homepage": "https://github.com/RICK-MONK/COMP2140-Chatbot-Project#readme",
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "pdfkit": "^0.17.2",
+    "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.34.2"
   }

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>White Rose Command Center</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Sidebar Styling */
+        .sidebar { height: 100vh; background: #2c3e50; color: white; position: fixed; width: 250px; padding-top: 20px; z-index: 1000; }
+        .sidebar a { color: #bdc3c7; text-decoration: none; display: block; padding: 15px 25px; font-size: 1.1rem; transition: 0.3s; cursor: pointer; }
+        .sidebar a:hover, .sidebar a.active { background: #34495e; color: white; border-left: 4px solid #1abc9c; }
+        
+        /* Main Content */
+        .main-content { margin-left: 250px; padding: 30px; }
+        
+        /* Cards */
+        .stat-card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white; }
+        .table-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .icon-box { font-size: 2.5rem; opacity: 0.8; }
+        
+        /* Gradients */
+        .bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); }
+        .bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); }
+        .bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); }
+        
+        /* Badges */
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+        .badge-pending { background-color: #ffeeba; color: #856404; }
+        .badge-completed { background-color: #d4edda; color: #155724; }
+
+        /* Utility */
+        .d-none { display: none !important; }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-left: 10px; }
+        .dot-online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+        .dot-offline { background-color: #e74c3c; box-shadow: 0 0 5px #e74c3c; animation: pulse 1.5s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="text-center mb-4">
+            <h4><i class="fa-solid fa-layer-group"></i> White Rose</h4>
+            <p class="text-muted text-small">Admin Console v2.2</p>
+        </div>
+        
+        <a id="nav-dashboard" class="active" onclick="switchTab('dashboard')">
+            <i class="fa-solid fa-chart-line me-2"></i> Dashboard
+        </a>
+        
+        <a id="nav-connection" onclick="switchTab('connection')">
+            <i class="fa-solid fa-qrcode me-2"></i> Connect Device
+            <span id="sidebarStatusDot" class="status-dot dot-offline"></span>
+        </a>
+
+        <a onclick="location.reload()">
+            <i class="fa-solid fa-rotate me-2"></i> Refresh Data
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- VIEW 1: DASHBOARD -->
+        <div id="view-dashboard">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>Dashboard Overview</h2>
+                    <p class="text-muted">Real-time data from WhatsApp Bot</p>
+                </div>
+                <button class="btn btn-primary shadow-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Print Report</button>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card stat-card bg-gradient-primary p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase mb-1">Total Revenue</h6>
+                                <h2 class="mb-0" id="totalRevenue">$0.00</h2>
+                            </div>
+                            <div class="icon-box"><i class="fa-solid fa-dollar-sign"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card bg-gradient-success p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase mb-1">Total Orders</h6>
+                                <h2 class="mb-0" id="totalOrders">0</h2>
+                            </div>
+                            <div class="icon-box"><i class="fa-solid fa-clipboard-check"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card stat-card bg-gradient-warning p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-uppercase mb-1">Pending Delivery</h6>
+                                <h2 class="mb-0" id="pendingOrders">0</h2>
+                            </div>
+                            <div class="icon-box"><i class="fa-solid fa-truck"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart and Table -->
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="table-card h-100">
+                        <h5 class="mb-4 text-secondary">Recent Orders</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th><th>Date</th><th>Customer</th><th>Details</th><th>Amount</th><th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 mb-4">
+                    <div class="table-card h-100">
+                        <h5 class="mb-4 text-secondary">Sales Analytics</h5>
+                        <canvas id="salesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: CONNECTION (QR CODE) -->
+        <div id="view-connection" class="d-none">
+            <h2 class="mb-4">Device Connection</h2>
+            
+            <div class="row">
+                <div class="col-md-6 offset-md-3">
+                    <div class="table-card text-center p-5">
+                        <div class="mb-4">
+                            <i class="fa-brands fa-whatsapp fa-4x text-success"></i>
+                        </div>
+                        
+                        <h4 id="connectionTitle">Waiting for Server...</h4>
+                        <p class="text-muted" id="connectionDesc">Checking connection status...</p>
+                        
+                        <!-- QR Box -->
+                        <div class="my-4 d-flex justify-content-center align-items-center" style="min-height: 260px;">
+                            <img id="qrImage" src="" alt="Scan QR" class="img-fluid border p-2 rounded d-none" width="250">
+                            <div id="qrSpinner" class="d-none">
+                                <i class="fa-solid fa-spinner fa-spin fa-3x text-muted"></i>
+                                <p class="mt-3 text-muted">Generating QR Code...</p>
+                            </div>
+                            <div id="connectedIcon" class="d-none">
+                                <i class="fa-solid fa-circle-check fa-5x text-success"></i>
+                                <p class="mt-3 fw-bold text-success">Device Connected</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info small text-start">
+                            <i class="fa-solid fa-circle-info me-2"></i> 
+                            <strong>How to connect:</strong> Open WhatsApp > Settings > Linked Devices > Link a Device
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Logic -->
+    <script>
+        // --- TAB SWITCHER ---
+        function switchTab(tabName) {
+            // Update Sidebar
+            document.querySelectorAll('.sidebar a').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-' + tabName).classList.add('active');
+
+            // Update View
+            document.getElementById('view-dashboard').classList.add('d-none');
+            document.getElementById('view-connection').classList.add('d-none');
+            document.getElementById('view-' + tabName).classList.remove('d-none');
+        }
+
+        // --- 1. SYSTEM STATUS & QR LOGIC ---
+        function checkStatus() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    const qrImg = document.getElementById('qrImage');
+                    const qrSpinner = document.getElementById('qrSpinner');
+                    const connectedIcon = document.getElementById('connectedIcon');
+                    const title = document.getElementById('connectionTitle');
+                    const desc = document.getElementById('connectionDesc');
+                    const dot = document.getElementById('sidebarStatusDot');
+
+                    if (data.ready) {
+                        // ONLINE
+                        qrImg.classList.add('d-none');
+                        qrSpinner.classList.add('d-none');
+                        connectedIcon.classList.remove('d-none');
+                        
+                        title.innerText = "System Online";
+                        desc.innerText = "Bot is active and listening for messages.";
+                        
+                        // Update Sidebar Dot
+                        dot.classList.remove('dot-offline');
+                        dot.classList.add('dot-online');
+                    } else {
+                        // OFFLINE
+                        connectedIcon.classList.add('d-none');
+                        title.innerText = "Scan to Login";
+                        desc.innerText = "Please link your WhatsApp account.";
+                        
+                        // Update Sidebar Dot
+                        dot.classList.remove('dot-online');
+                        dot.classList.add('dot-offline');
+
+                        if (data.qr) {
+                            // SHOW QR
+                            qrImg.src = data.qr;
+                            qrImg.classList.remove('d-none');
+                            qrSpinner.classList.add('d-none');
+                        } else {
+                            // WAITING FOR QR
+                            qrImg.classList.add('d-none');
+                            qrSpinner.classList.remove('d-none');
+                        }
+                    }
+                })
+                .catch(err => console.log("Connecting..."));
+        }
+        setInterval(checkStatus, 1000);
+        checkStatus();
+
+        // --- 2. LOAD ORDERS ---
+        fetch('/api/orders')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('tableBody');
+                let revenue = 0;
+                let pending = 0;
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-muted">No orders yet.</td></tr>';
+                } else {
+                    tbody.innerHTML = '';
+                    data.forEach(order => {
+                        const price = parseFloat(order.price) || 0;
+                        revenue += price;
+                        pending++;
+                        const row = `<tr>
+                            <td><span class="fw-bold">#${order.id || '---'}</span></td>
+                            <td>${order.date}</td>
+                            <td><div class="fw-bold">${order.name}</div><div class="small text-muted">${order.phone}</div></td>
+                            <td>${order.details}</td>
+                            <td class="fw-bold text-success">$${order.price}</td>
+                            <td><span class="status-badge badge-pending">${order.status}</span></td>
+                        </tr>`;
+                        tbody.innerHTML += row;
+                    });
+                }
+                document.getElementById('totalRevenue').innerText = '$' + revenue.toLocaleString(undefined, {minimumFractionDigits: 2});
+                document.getElementById('totalOrders').innerText = data.length;
+                document.getElementById('pendingOrders').innerText = pending;
+
+                // Chart
+                const ctx = document.getElementById('salesChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Blinds', 'Services'],
+                        datasets: [{ data: [data.length, 0], backgroundColor: ['#4e73df', '#1cc88a'] }]
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
