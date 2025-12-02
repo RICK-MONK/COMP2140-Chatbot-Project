@@ -1,0 +1,93 @@
+/*
+ * File: public/css/style.css
+ * Description: Stylesheet for Admin Dashboard
+ */
+
+body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+.sidebar { 
+    height: 100vh; 
+    background: #2c3e50; 
+    color: white; 
+    position: fixed; 
+    width: 250px; 
+    padding-top: 20px; 
+    z-index: 1000; 
+}
+
+.sidebar a { 
+    color: #bdc3c7; 
+    text-decoration: none; 
+    display: block; 
+    padding: 15px 25px; 
+    font-size: 1.1rem; 
+    transition: 0.3s; 
+    cursor: pointer; 
+}
+
+.sidebar a:hover, .sidebar a.active { 
+    background: #34495e; 
+    color: white; 
+    border-left: 4px solid #1abc9c; 
+}
+
+.main-content { margin-left: 250px; padding: 30px; }
+
+.stat-card { 
+    border: none; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    color: white; 
+}
+
+.table-card { 
+    background: white; 
+    border-radius: 10px; 
+    padding: 20px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+}
+
+.chart-container {
+    height: 300px;
+}
+
+.bg-gradient-primary { background: linear-gradient(45deg, #4e73df, #224abe); }
+.bg-gradient-success { background: linear-gradient(45deg, #1cc88a, #13855c); }
+.bg-gradient-warning { background: linear-gradient(45deg, #f6c23e, #dda20a); }
+
+.status-select { 
+    border: none; 
+    background: transparent; 
+    font-weight: bold; 
+    cursor: pointer; 
+    padding: 5px; 
+    border-radius: 5px; 
+}
+
+.status-select:hover { background: rgba(0,0,0,0.05); }
+
+.btn-icon { 
+    border: none; 
+    background: transparent; 
+    color: #e74c3c; 
+    transition: 0.2s; 
+}
+
+.btn-icon:hover { color: #c0392b; transform: scale(1.1); }
+
+.date-input { 
+    border: 1px solid #ddd; 
+    border-radius: 5px; 
+    padding: 4px; 
+    font-size: 0.9rem; 
+    color: #555; 
+}
+
+/* Status Colors */
+.status-pending { color: #f39c12; }
+.status-in { color: #3498db; }
+.status-delivered { color: #27ae60; }
+.status-picked { color: #27ae60; }
+.status-cancelled { color: #e74c3c; }
+
+.d-none { display: none !important; }

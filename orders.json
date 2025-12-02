@@ -1,31 +1,35 @@
 [
   {
-    "id": 6378,
-    "date": "11/29/2025",
+    "id": 7715,
+    "date": "12/1/2025",
     "name": "Customer",
     "phone": "18767835744",
     "details": "34\" x 36\" (Illusion Roller Shades (Cat 3))",
     "price": "20631.00",
     "email": "pmarsden2k5@gmail.com",
-    "fulfillment": "Delivery (3-4 Days)",
+    "fulfillment": "Pickup",
     "status": "PENDING DELIVERY"
   },
   {
-    "id": 2516,
-    "date": "11/29/2025",
-    "name": "Rick Don",
+    "id": 2746,
+    "date": "12/1/2025",
+    "name": "Customer",
     "phone": "18767835744",
-    "details": "34\" x 36\" (Illusion Roller Shades (Cat 3))",
+    "details": "34\" x 35\" (Illusion Roller Shades (Cat 3))",
     "price": "20631.00",
+    "email": "pmarsden2k5@gmail.com",
+    "fulfillment": "Pickup",
     "status": "PENDING DELIVERY"
   },
   {
-    "id": 6971,
-    "date": "11/29/2025",
-    "name": "Rick Don",
+    "id": 7523,
+    "date": "12/1/2025",
+    "name": "Customer",
     "phone": "18767835744",
-    "details": "36\" x 48\" Blinds",
-    "price": "14400.00",
+    "details": "34\" x 26\" (Illusion Roller Shades (Cat 3))",
+    "price": "18427.60",
+    "email": "pmarsden2k5@gmail.com",
+    "fulfillment": "Pickup",
     "status": "PENDING DELIVERY"
   }
 ]

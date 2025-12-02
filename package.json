@@ -1,29 +1,20 @@
 {
-  "name": "comp2140-chatbot-project",
+  "name": "white-rose-chatbot",
   "version": "1.0.0",
-  "description": "",
+  "description": "COMP2140 Project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/RICK-MONK/COMP2140-Chatbot-Project.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/RICK-MONK/COMP2140-Chatbot-Project/issues"
-  },
-  "homepage": "https://github.com/RICK-MONK/COMP2140-Chatbot-Project#readme",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "pdfkit": "^0.17.2",
-    "qrcode": "^1.5.4",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.2",
+    "nodemailer": "^6.9.7",
+    "pdfkit": "^0.13.0",
+    "qrcode": "^1.5.3",
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.34.2"
+    "whatsapp-web.js": "^1.23.0"
   }
 }
