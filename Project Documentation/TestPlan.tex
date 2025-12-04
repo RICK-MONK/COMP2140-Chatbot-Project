@@ -1,0 +1,323 @@
+﻿\documentclass[11pt, a4paper]{article}
+% CHANGED: Added 'landscape' option and adjusted margins slightly
+\usepackage[a4paper, landscape, top=2cm, bottom=2cm, left=2cm, right=2cm]{geometry}
+\usepackage{fontspec}
+\usepackage[english]{babel}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{colortbl}
+\usepackage{amssymb}
+
+% --- FONTS ---
+% NOTE: Ensure you have the Noto Sans font family installed, 
+% or change this to a font available on your system (e.g., Arial).
+\babelfont{rm}{Noto Sans}
+\babelfont{sf}{Noto Sans}
+
+% --- COLORS ---
+\definecolor{primary}{RGB}{0, 51, 102}
+\definecolor{lightgray}{RGB}{240, 240, 240}
+\definecolor{headergray}{RGB}{200, 200, 200}
+
+% --- TITLE FORMATTING ---
+\titleformat{\section}
+{\color{primary}\normalfont\Large\bfseries}
+{\thesection}{1em}{}
+
+\titleformat{\subsection}
+{\color{primary}\normalfont\large\bfseries}
+{\thesubsection}{1em}{}
+
+% --- HYPERLINKS ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+
+% --- DOCUMENT INFO ---
+\title{
+    \vspace{1cm} % Reduced vertical space for landscape title page
+    \Huge \textbf{Master Test Plan}\\
+    \large White Rose Interiors WhatsApp Chatbot
+    \vspace{0.5cm}
+}
+\author{\textbf{Group 1} \\ University of the West Indies}
+\date{December 3, 2025 \\ Version 2.5 (Landscape)}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\vspace{1cm}
+
+\begin{center}
+    \begin{tabular}{|p{0.3\textwidth}|p{0.6\textwidth}|}
+        \hline
+        \rowcolor{lightgray} \textbf{Item} & \textbf{Details} \\
+        \hline
+        \textbf{Project Name} & White Rose Interiors Chatbot \\
+        \hline
+        \textbf{Document Type} & Master Test Plan (MTP) \\
+        \hline
+        \textbf{Version} & 2.5 (Landscape Orientation) \\
+        \hline
+        \textbf{Status} & \textbf{DRAFT} \\
+        \hline
+    \end{tabular}
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ---------------------------------------------------------------------
+
+\section{Introduction}
+This Master Test Plan (MTP) outlines strategy, resources, and procedures for testing the White Rose Interiors Chatbot. The system is a Node.js app using \texttt{whatsapp-web.js} and local JSON storage.
+
+\subsection{Objectives}
+\begin{itemize}
+    \item Verify all functional requirements (UI, pricing, invoicing, dashboard, status, reminders, manage orders).
+    \item Validate file-based storage integrity across updates (orders.json, cleaning\_supply.json, reminders.json).
+    \item Ensure chatbot/dash respond within a few seconds under normal load and recover from invalid inputs.
+\end{itemize}
+
+\section{Test Environment}
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabular}{|p{0.2\textwidth}|p{0.7\textwidth}|}
+        \hline
+        \rowcolor{headergray} \textbf{Component} & \textbf{Specification} \\
+        \hline
+        \textbf{Hardware} & Windows 10/11 or Server 2019+ \\
+        \hline
+        \textbf{Runtime} & Node.js v18+ \\
+        \hline
+        \textbf{Storage} & Local File System (orders.json, cleaning\_supply.json, reminders.json) \\
+        \hline
+        \textbf{Mobile} & 1 Android + 1 iOS for WhatsApp tests \\
+        \hline
+        \textbf{Browser} & Chrome/Edge for Admin Dashboard \\
+        \hline
+    \end{tabular}
+    \caption{Test Environment Specifications}
+\end{table}
+
+\section{Entry \& Exit Criteria}
+\subsection{Entry}
+\begin{itemize}
+    \item[$\square$] \texttt{server.js} starts without errors; WhatsApp client QR scanned and “Ready”.
+    \item[$\square$] Baseline data present in \texttt{orders.json}, \texttt{cleaning\_supply.json}.
+    \item[$\square$] Admin token obtainable via /api/login.
+\end{itemize}
+
+\subsection{Exit}
+\begin{itemize}
+    \item[$\square$] 100\% High-priority tests passed; no open High/Critical defects.
+    \item[$\square$] PDFs generate on host FS; reminder logs written to \texttt{reminders.json}.
+\end{itemize}
+
+\newpage
+\section{Test Case Execution Log}
+
+% Redefine array stretch for execution tables
+\renewcommand{\arraystretch}{1.3}
+
+% UPDATED COLUMN WIDTHS FOR LANDSCAPE
+% Total ~0.95 textwidth to ensure fit
+% ID: 0.05 | Scenario: 0.12 | Steps: 0.22 | Expected: 0.20 | Status: 0.06 | Actual: 0.15 | Comments: 0.15
+\subsection{Requirement 1: User Interface \& Flows}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    UI-01 & Main Menu & 1) Send “Hi”. & Shows: Goods/Services, Manage Orders, Get Order Status, Contact Support, FAQ. & & & \\ \hline
+
+    UI-02 & Invalid Input & 1) From menu, send “99”. & Bot prompts to pick a listed option. & & & \\ \hline
+
+    UI-03 & Cleaning Services & 1) Select Goods/Services → Cleaning Services. 2) Send “Need sofa cleaning”. & Bot replies that Cleaning Services are currently unavailable, notes the request, and state resets. & & & \\ \hline
+
+    UI-04 & Cleaning Supplies & 1) Select Goods/Services → Cleaning Supplies. 2) Choose a category from cleaning\_supply.json poll. & Bot prompts “Please leave a message describing what you need,” then confirms receipt. & & & \\ \hline
+\end{longtable}
+
+\subsection{Requirement 2: Price Calculator}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    PC-01 & Blind Quote & 1) Select product. 2) Enter valid width/height. & Price matches grid + install; PDF estimate sent. & & & \\ \hline
+
+    PC-02 & Invalid Dim & 1) Enter “-5”. & Bot rejects, asks for valid number. & & & \\ \hline
+
+    PC-03 & Email Estimate & 1) Complete quote. 2) Choose “Email me”. & Email prompted, PDF emailed (or graceful failure message). & & & \\ \hline
+\end{longtable}
+
+\subsection{Requirement 3: Invoicing}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    INV-01 & Confirm Order & 1) From estimate, choose “Confirm Order”. & New order saved in \texttt{orders.json} with correct status (e.g., PENDING DELIVERY). & & & \\ \hline
+
+    INV-02 & Email Failure & 1) Request email when SMTP unavailable. & Bot says “Could not send email…”, logs error. & & & \\ \hline
+\end{longtable}
+
+\subsection{Requirement 4: Admin Dashboard}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    AD-01 & Auth Negative (All Routes) & 1) Access /api/orders, /api/report, /api/status without token. & All protected endpoints return 401 Unauthorized. & & & \\ \hline
+
+    AD-02 & Update Order & 1) Change status to READY. & Persisted to \texttt{orders.json}; notify ready sends WA msg. & & & \\ \hline
+
+    AD-03 & Reminder UI & 1) Edit reminder time in table. & Picker stays open; saved time matches selection. & & & \\ \hline
+
+    AD-04 & Filters/Report & 1) Apply text/status/date filters. 2) Download report. & Filters apply; CSV downloads successfully. & & & \\ \hline
+\end{longtable}
+
+\subsection{Requirement 5: Status Updates}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    ST-01 & Status Lookup & 1) Select “Get Order Status”. & Returns orders for caller’s phone only. & & & \\ \hline
+
+    ST-02 & Status Change & 1) Admin updates status to "In Progress" or "Ready". & Customer receives WhatsApp notification; status persists in \texttt{orders.json}. & & & \\ \hline
+
+    ST-03 & Job Completion & 1) Admin updates status to "Delivered" or "Picked Up". & Customer receives the status-change notification; status persists. & & & \\ \hline
+\end{longtable}
+
+\subsection{Requirement 6: Automated Reminders}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    REM-01 & Send Reminder & 1) Set reminderTime due soon. 2) Wait for scheduler. & WA reminder sent; \texttt{reminderSent}=true; \texttt{reminders.json} log written. & & & \\ \hline
+
+    REM-02 & Reset Flag on Edit & 1) Reminder already sent (\texttt{true}). 2) Admin updates time. & \texttt{reminderSent} resets to \texttt{false} in JSON to allow re-send. & & & \\ \hline
+\end{longtable}
+
+\subsection{Requirement 7: Manage Orders (Self-Service)}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    MG-01 & Retrieve Booking & 1) Select “Manage Orders”. & Bot lists caller’s upcoming orders (max 10). & & & \\ \hline
+
+    MG-02 & Reschedule & 1) Manage Orders → select order → Reschedule. & New date/time saved to \texttt{orders.json}; dashboard reflects update. & & & \\ \hline
+
+    MG-03 & Cancel Booking & 1) Manage Orders → Cancel → confirm. & Order removed/updated; bot confirms; dashboard reflects change. & & & \\ \hline
+
+    MG-04 & Invalid Selection & 1) In Manage Orders, choose invalid option. & Bot prompts to select a valid order/action. & & & \\ \hline
+\end{longtable}
+
+\subsection{Data Integrity \& Performance}
+\begin{longtable}{|p{0.05\textwidth}|p{0.12\textwidth}|p{0.22\textwidth}|p{0.20\textwidth}|p{0.06\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{ID} & \textbf{Scenario} & \textbf{Steps} & \textbf{Expected} & \textbf{Stat} & \textbf{Actual Result} & \textbf{Comments} \\ \hline
+    \endhead
+
+    INT-01 & JSON Integrity & 1) Corrupt cleaning\_supply.json. & Bot handles error/logs; no crash (graceful fallback). & & & \\ \hline
+
+    INT-02 & Order JSON Corrupt & 1) Manually corrupt \texttt{orders.json} (bad syntax). 2) Restart. & Error logged; service does not crash, but data load fails gracefully (no backup expected). & & & \\ \hline
+
+    PERF-01 & Response SLA & 1) Send 5 rapid messages. & Replies within a few seconds each under normal load. & & & \\ \hline
+\end{longtable}
+
+\newpage
+\section{Requirements Traceability Matrix}
+
+\renewcommand{\arraystretch}{1.4}
+\begin{longtable}{|p{0.25\textwidth}|p{0.70\textwidth}|}
+    \hline
+    \rowcolor{headergray} \textbf{Requirement ID} & \textbf{Associated Test Cases} \\ \hline
+
+    \textbf{Req 1: User Interface} & UI-01, UI-02, UI-03, UI-04 \\ \hline
+    1.1 Display service options & UI-01 \\ \hline
+    1.2 Select options via number/keyword & UI-01, UI-04 \\ \hline
+    1.3 Invalid input detection & UI-02, MG-04 \\ \hline
+    1.4 Correct next–step routing & UI-03, UI-04 \\ \hline
+
+    \textbf{Req 2: Price Calculator} & PC-01, PC-02, PC-03 \\ \hline
+    2.1 Generate estimate & PC-01 \\ \hline
+    2.2 Send quotation via WA/email & PC-01, PC-03 \\ \hline
+
+    \textbf{Req 3: Invoice Generation} & INV-01, INV-02 \\ \hline
+    3.1 Generate invoice & INV-01 \\ \hline
+    3.2 Store invoice/order details & INV-01 \\ \hline
+    3.3 Email invoice & INV-01, INV-02 \\ \hline
+
+    \textbf{Req 4: Admin Dashboard} & AD-01, AD-02, AD-03, AD-04 \\ \hline
+    4.1 Generate report & AD-04 \\ \hline
+    4.2 Filter dashboard data & AD-04 \\ \hline
+    4.3 Display totals, unresolved tickets & AD-04 \\ \hline
+
+    \textbf{Req 5: Status Updates} & ST-01, ST-02, ST-03 \\ \hline
+    5.1 Query status & ST-01 \\ \hline
+    5.2 Retrieve job status & ST-01 \\ \hline
+    5.3 Proactive updates & ST-02 \\ \hline
+    5.4 Final message after completion & ST-03 \\ \hline
+
+    \textbf{Req 6: Automated Reminders} & REM-01, REM-02 \\ \hline
+    6.1 Scan upcoming appointments & REM-01 \\ \hline
+    6.2 Send reminder messages & REM-01 \\ \hline
+    6.3 Confirm/reschedule options & REM-01, MG-02 \\ \hline
+    6.4 Log reminder sent & REM-01, REM-02 \\ \hline
+
+    \textbf{Req 7: Manage Orders} & MG-01, MG-02, MG-03, MG-04 \\ \hline
+    7.1 Retrieve upcoming appointments & MG-01 \\ \hline
+    7.2 Authenticate by phone number & MG-01 \\ \hline
+    7.3 Present reschedule/cancel options & MG-02, MG-03 \\ \hline
+    7.4 Reschedule flow & MG-02 \\ \hline
+    7.5 Cancel flow & MG-03 \\ \hline
+
+    \textbf{Non-functional: Performance} & PERF-01 \\ \hline
+    \textbf{Non-functional: Data Integrity} & INT-01, INT-02 \\ \hline
+
+\end{longtable}
+
+\section{Defect Report Template}
+\begin{table}[h]
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \begin{tabular}{|p{0.10\textwidth}|p{0.10\textwidth}|p{0.05\textwidth}|p{0.65\textwidth}|}
+        \hline
+        \rowcolor{headergray} \textbf{Defect ID} & \textbf{Test ID} & \textbf{Sev} & \textbf{Description of Failure} \\
+        \hline
+        & & & \\
+        \hline
+        & & & \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Approvals}
+\vspace{1cm}
+\begin{tabular}{p{0.4\textwidth} p{0.5\textwidth}}
+    \textbf{QA Lead:} & \hrulefill \\
+    & \small{(Signature / Date)} \\[1cm]
+    
+    \textbf{Developer Lead:} & \hrulefill \\
+    & \small{(Patrick Marsden)} \\[1cm]
+    
+    \textbf{Client Representative:} & \hrulefill \\
+    & \small{(White Rose Interiors)} \\
+\end{tabular}
+
+\end{document}

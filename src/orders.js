@@ -9,6 +9,20 @@ const path = require('path');
 
 const ordersFile = path.join(__dirname, '../orders.json');
 
+function normalizeDate(input) {
+    if (!input) return null;
+    const parsed = new Date(input);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString().split('T')[0];
+}
+
+function normalizeDateTime(input) {
+    if (!input) return null;
+    const parsed = new Date(input);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString();
+}
+
 // --- READ ---
 function getAllOrders() {
     if (fs.existsSync(ordersFile)) {
@@ -42,11 +56,32 @@ function updateOrder(id, updates) {
     const index = orders.findIndex(o => o.id == id);
     
     if (index !== -1) {
-        orders[index] = { ...orders[index], ...updates };
+        const existing = orders[index];
+        const normalizedUpdates = { ...updates };
+        if (updates.scheduledDate) {
+            const isoDate = normalizeDate(updates.scheduledDate);
+            if (isoDate) normalizedUpdates.scheduledDate = isoDate;
+        }
+        if (updates.reminderTime) {
+            const isoDateTime = normalizeDateTime(updates.reminderTime);
+            if (isoDateTime) {
+                normalizedUpdates.reminderTime = isoDateTime;
+                normalizedUpdates.reminderSent = false;
+                normalizedUpdates.reminderSentAt = null;
+            }
+        }
+
+        orders[index] = { ...existing, ...normalizedUpdates };
         fs.writeFileSync(ordersFile, JSON.stringify(orders, null, 2));
-        return true;
+        return { 
+            success: true, 
+            id: existing.id, 
+            phone: existing.phone, 
+            oldStatus: existing.status || null,
+            order: orders[index]
+        };
     }
-    return false;
+    return { success: false };
 }
 
 // --- DELETE ---

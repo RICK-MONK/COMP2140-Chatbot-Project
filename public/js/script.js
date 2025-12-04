@@ -8,6 +8,7 @@ let allOrders = [];
 let salesChartInstance = null;
 let pieChartInstance = null;
 let authToken = localStorage.getItem('authToken');
+let isEditingReminder = false;
 
 // --- AUTH ---
 async function attemptLogin(username, password) {
@@ -65,9 +66,14 @@ function switchTab(tab) {
 }
 
 // --- DATA LOADING ---
+function authHeaders() {
+    return authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
+}
+
 async function loadData() {
+    if (isEditingReminder) return; // avoid closing picker while editing
     try {
-        const res = await fetch('/api/orders');
+        const res = await fetch('/api/orders', { headers: authHeaders() });
         if (!res.ok) {
             const txt = await res.text();
             throw new Error(`HTTP ${res.status}: ${txt}`);
@@ -126,7 +132,12 @@ function renderTable(orders) {
             <td>${order.details}<br>${payDateInfo}</td>
             <td>
                 <input type="date" class="date-input" value="${order.scheduledDate || ''}" onchange="updateDate('${order.id}', this)">
+                ${order.scheduleTime ? `<div class="small text-primary">Time: ${order.scheduleTime}</div>` : ''}
                 <div class="small text-muted mt-1">${icon} ${order.fulfillment || 'Delivery'}</div>
+            </td>
+            <td>
+                <input type="datetime-local" class="form-control form-control-sm" value="${formatDateTimeLocal(order.reminderTime)}" onfocus="startReminderEdit()" onblur="endReminderEdit()" onchange="updateReminder('${order.id}', this.value)" />
+                ${order.reminderSent ? `<div class="small text-success">Sent: ${formatDateTimeLocal(order.reminderSentAt) || 'Sent'}</div>` : '<div class="small text-muted">Pending</div>'}
             </td>
             <td class="fw-bold">$${order.price}</td>
             <td>
@@ -263,7 +274,7 @@ async function updateStatus(id, select) {
     
     await fetch(`/api/orders/${id}`, {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', ...authHeaders()},
         body: JSON.stringify({ status: newStatus })
     });
     // Don't full reload here, just update UI or silent reload
@@ -273,31 +284,80 @@ async function updateStatus(id, select) {
 async function updateDate(id, input) {
     await fetch(`/api/orders/${id}`, {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json', ...authHeaders()},
         body: JSON.stringify({ scheduledDate: input.value })
     });
+}
+
+async function updateReminder(id, value) {
+    await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json', ...authHeaders()},
+        body: JSON.stringify({ reminderTime: value, reminderSent: false })
+    });
+    isEditingReminder = false;
 }
 
 async function notifyReady(id) {
     if(!confirm(`Notify customer for Order #${id}?`)) return;
     try {
-        const res = await fetch(`/api/notify/${id}`, { method: 'POST' });
+        const res = await fetch(`/api/notify/${id}`, { method: 'POST', headers: authHeaders() });
         const d = await res.json();
-        if(d.success) alert("✅ Notification sent!");
-        else alert("❌ Failed. Check bot connection.");
-    } catch(e) { alert("❌ Server Error"); }
+        if(d.success) alert("Notification sent!");
+        else alert("Failed. Check bot connection.");
+    } catch(e) { alert("Server Error"); }
 }
 
 async function deleteOrder(id) {
     if(!confirm('Delete this order?')) return;
-    await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+    await fetch(`/api/orders/${id}`, { method: 'DELETE', headers: authHeaders() });
     loadData();
 }
 
 async function clearAllOrders() {
-    if(!confirm('⚠️ WARNING: DELETE ALL DATA?')) return;
-    await fetch('/api/orders', { method: 'DELETE' });
+    if(!confirm('WARNING: DELETE ALL DATA?')) return;
+    await fetch('/api/orders', { method: 'DELETE', headers: authHeaders() });
     loadData();
+}
+
+async function downloadReport() {
+    try {
+        const res = await fetch('/api/report', { headers: authHeaders() });
+        if (!res.ok) {
+            alert('Failed to get report. Please re-login and try again.');
+            return;
+        }
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'orders_report.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Report download error', e);
+        alert('Report download failed.');
+    }
+}
+
+function formatDateTimeLocal(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const offsetMs = d.getTimezoneOffset() * 60000;
+    const local = new Date(d.getTime() - offsetMs);
+    return local.toISOString().slice(0, 16);
+}
+
+function startReminderEdit() {
+    isEditingReminder = true;
+}
+
+function endReminderEdit() {
+    // slight delay to allow onchange to fire before resuming reloads
+    setTimeout(() => { isEditingReminder = false; }, 300);
 }
 
 // --- AUTH & POLLING ---
@@ -312,11 +372,11 @@ function checkStatus() {
     const status = document.getElementById('connStatus');
     if (!title || !status) return;
 
-    fetch('/api/status')
+    fetch('/api/status', { headers: authHeaders() })
         .then(r => r.json())
         .then(d => {
             if (d.ready) {
-                title.innerText = "✅ System Online";
+                title.innerText = "System Online";
                 status.innerText = "Connected";
                 status.className = "text-success fw-bold";
                 if (img) img.classList.add('d-none');

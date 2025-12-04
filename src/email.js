@@ -18,7 +18,7 @@ const transporter = nodemailer.createTransport({
 async function sendInvoiceEmail(toEmail, order, pdfPath) {
     if (!toEmail || !toEmail.includes('@')) return false;
 
-    console.log(`📧 Attempting to send email to ${toEmail}...`);
+    console.log(`Attempting to send email to ${toEmail}...`);
 
     const mailOptions = {
         from: `"White Rose Interiors" <pmarsden2k5@gmail.com>`,
@@ -35,10 +35,10 @@ async function sendInvoiceEmail(toEmail, order, pdfPath) {
 
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ Email sent successfully! Message ID: ${info.messageId}`);
+        console.log(`Email sent successfully. Message ID: ${info.messageId}`);
         return true;
     } catch (error) {
-        console.error("❌ Email Error:", error);
+        console.error("Email Error:", error);
         return false;
     }
 }

@@ -1,4 +1,4 @@
-﻿const { Client, LocalAuth, Poll, MessageMedia } = require('whatsapp-web.js');
+const { Client, LocalAuth, Poll, MessageMedia } = require('whatsapp-web.js');
 const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const { generateInvoicePDF } = require('./invoice');
@@ -7,7 +7,6 @@ const path = require('path');
 const fs = require('fs');
 const { calculatePrice } = require('./pricing');
 const { normalizeDate, isValidTime, buildCatalog, makeOrderHelpers } = require('./botHelpers');
-const { toPhone, calculateCartTotals, buildOrderFromCart, createSupplyQuote } = require('./orderUtils');
 const cleaningSupply = require('../cleaning_supply.json');
 
 function createBot({ config, ordersStore }) {
@@ -28,76 +27,7 @@ function createBot({ config, ordersStore }) {
     const supplyItems = supplyCategories.flatMap(c => c.items.map(i => ({ ...i, categoryKey: c.key, categoryLabel: c.label })));
     const cleaningServiceOptions = ['Carpet Cleaning', 'Chair Cleaning', 'Rug Cleaning'];
 
-    const withEmoji = (emoji, label) => `${emoji} ${label}`;
-    const withEmojiList = (labels, emoji) => labels.map(label => withEmoji(emoji, label));
-    const mainMenuOptions = [
-        withEmoji('🛍️', 'Goods/Services'),
-        withEmoji('📋', 'Manage Orders'),
-        withEmoji('🔎', 'Get Order Status'),
-        withEmoji('💬', 'Contact Support'),
-        withEmoji('❓', 'FAQ')
-    ];
-    const goodsCategoryOptions = [
-        withEmoji('🪟', 'Blinds'),
-        withEmoji('🧼', 'Cleaning Services'),
-        withEmoji('🧴', 'Cleaning Supplies')
-    ];
-    const manualSizeHelpOptions = [
-        withEmoji('💬', 'Talk to support'),
-        withEmoji('📏', 'Enter another size'),
-        withEmoji('🔄', 'Start over')
-    ];
-    const addItemOptions = [
-        withEmoji('🪟', 'Add another blind'),
-        withEmoji('🧴', 'Add another supply'),
-        withEmoji('📄', 'Finish & get PDF')
-    ];
-    const fulfillmentOptions = [
-        withEmoji('🚚', 'Delivery (3-4 Days)'),
-        withEmoji('📦', 'Pickup')
-    ];
-    const confirmPurchaseOptions = [
-        withEmoji('✅', 'Confirm Purchase'),
-        withEmoji('❌', 'Cancel'),
-        withEmoji('⏭️', 'No')
-    ];
-    const confirmOrderOptions = [
-        withEmoji('📧', 'Send email'),
-        withEmoji('✅', 'Confirm Purchase'),
-        withEmoji('❌', 'Cancel')
-    ];
-    const finalConfirmOrderOptions = [
-        withEmoji('📧', 'Send email'),
-        withEmoji('✅', 'Confirm Order'),
-        withEmoji('❌', 'Cancel')
-    ];
-    const faqMenuOptions = [
-        withEmoji('🕒', 'Hours & Location'),
-        withEmoji('🚚', 'Delivery & Pickup'),
-        withEmoji('💵', 'Quotes & Pricing'),
-        withEmoji('🧾', 'Orders & Changes'),
-        withEmoji('💳', 'Payments'),
-        withEmoji('🔄', 'Returns & Warranty'),
-        withEmoji('☎️', 'Contact'),
-        withEmoji('✅', 'Done')
-    ];
-    const sendMainMenu = async (userId) => {
-        const poll = new Poll('How can we help you today?', mainMenuOptions);
-        await client.sendMessage(userId, poll);
-    };
-    const sendFulfillmentPoll = async (userId, prompt = 'Choose delivery method to place order:') => {
-        const poll = new Poll(prompt, fulfillmentOptions);
-        await client.sendMessage(userId, poll);
-    };
-
-    function createOrderId() {
-        const existingIds = new Set((ordersStore.getAllOrders() || []).map(o => String(o.id)));
-        for (let i = 0; i < 5; i++) {
-            const id = (Date.now() % 1_000_0000).toString().padStart(7, '0'); // up to 7 digits
-            if (!existingIds.has(id)) return id;
-        }
-        return Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0');
-    }
+    const createOrderId = () => `${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
     const ensureUserData = (userId) => {
         if (!userData[userId]) userData[userId] = {};
         return userData[userId];
@@ -106,15 +36,6 @@ function createBot({ config, ordersStore }) {
     const findSupplyItem = (name, categoryKey) => {
         const items = categoryKey ? supplyItems.filter(i => i.categoryKey === categoryKey) : supplyItems;
         return items.find(i => i.name.toLowerCase() === name.toLowerCase());
-    };
-    const getProductLimits = (productKey) => {
-        const p = config.products[productKey];
-        if (!p || p.type !== 'grid') return null;
-        const minWidth = p.widths[0];
-        const maxWidth = p.widths[p.widths.length - 1];
-        const minHeight = p.heights[0];
-        const maxHeight = p.heights[p.heights.length - 1];
-        return { minWidth, maxWidth, minHeight, maxHeight };
     };
 
     function resetUser(userId) {
@@ -140,6 +61,36 @@ function createBot({ config, ordersStore }) {
         return lines.join('\n');
     }
 
+    function createSupplyQuote({ item, purchaseType, quantity, existingEmail, existingFulfillment }) {
+        const pricePer = purchaseType === 'case' ? item.casePrice : item.unitPrice;
+        if (pricePer === null || pricePer === undefined) return null;
+        const qty = Number(quantity || 0);
+        if (!Number.isFinite(qty) || qty <= 0) return null;
+        const base = pricePer * qty;
+        const install = 0;
+        const subtotal = base;
+        const gct = +(subtotal * 0.15).toFixed(2);
+        const total = subtotal + gct;
+        const label = `${qty} x ${item.name} (${purchaseType === 'case' ? 'Case' : 'Unit'}${item.unitSize ? `, ${item.unitSize}` : ''})`;
+
+        return {
+            width: 0,
+            height: 0,
+            quantity: qty,
+            product: label,
+            description: item.categoryLabel ? `${item.categoryLabel} supply` : 'Cleaning Supply',
+            price: total.toFixed(2),
+            email: existingEmail || null,
+            fulfillment: existingFulfillment || null,
+            priceBreakdown: {
+                base,
+                install,
+                subtotal,
+                gct
+            }
+        };
+    }
+
     async function placeOrder({ userId, user, displayName }) {
         const cart = user.cart || [];
         const fulfillment = user.lastQuote?.fulfillment || user.fulfillment;
@@ -148,23 +99,84 @@ function createBot({ config, ordersStore }) {
             resetUser(userId);
             return;
         }
+        else if ((option === 'Delivery (3-4 Days)' || option === 'Pickup') && userState[userId] === 'choose_fulfillment') {
+            if (user.lastQuote) user.lastQuote.fulfillment = option;
+            user.fulfillment = option;
+            await placeOrder({ userId, user, displayName });
+        }
         if (!fulfillment) {
             userState[userId] = 'choose_fulfillment';
-            await sendFulfillmentPoll(userId, 'Choose delivery method to place order:');
+            const poll = new Poll('Choose delivery method to place order:', ['Delivery (3-4 Days)', 'Pickup']);
+            await client.sendMessage(userId, poll);
             return;
         }
-        const existingIds = ordersStore.getAllOrders().map(o => o.id);
         const order = buildOrderFromCart({
             cart,
             email: user.lastQuote?.email,
             displayName,
-            phone: toPhone(userId),
-            fulfillment,
-            existingIds
+            phone: userId.replace('@c.us', ''),
+            fulfillment
         });
         ordersStore.saveOrder(order);
         await client.sendMessage(userId, `Order #${order.id} placed!`);
         resetUser(userId);
+    }
+
+    function calculateCartTotals(cart) {
+        return (cart || []).reduce((acc, item) => {
+            const base = Number(item.priceBreakdown?.base || 0);
+            const install = Number(item.priceBreakdown?.install || 0);
+            const subtotal = item.priceBreakdown?.subtotal !== undefined
+                ? Number(item.priceBreakdown.subtotal)
+                : base + install;
+            const gct = item.priceBreakdown?.gct !== undefined
+                ? Number(item.priceBreakdown.gct)
+                : subtotal * 0.15;
+            const total = item.price !== undefined ? Number(item.price) : subtotal + gct;
+
+            acc.base += base;
+            acc.install += install;
+            acc.subtotal += subtotal;
+            acc.gct += gct;
+            acc.total += total;
+            return acc;
+        }, { base: 0, install: 0, subtotal: 0, gct: 0, total: 0 });
+    }
+
+    function buildOrderFromCart({ cart, email, displayName, phone, fulfillment, includeStatus = true }) {
+        if (!cart || !cart.length) return null;
+        const totals = calculateCartTotals(cart);
+        const items = cart.map(item => ({
+            width: item.width,
+            height: item.height,
+            quantity: item.quantity || 1,
+            product: item.product,
+            description: item.description,
+            priceBreakdown: item.priceBreakdown
+        }));
+        const details = items.map(i => {
+            if (i.description) return `${i.product}`;
+            return `${i.width}" x ${i.height}" (${i.product})`;
+        }).join(' | ');
+
+        return {
+            id: createOrderId(),
+            date: new Date().toLocaleDateString(),
+            name: displayName || "Customer",
+            phone,
+            items,
+            details,
+            price: totals.total.toFixed(2),
+            email: email || 'N/A',
+            fulfillment: fulfillment || 'N/A',
+            priceBreakdown: {
+                base: totals.base,
+                install: totals.install,
+                subtotal: totals.subtotal,
+                gct: totals.gct
+            },
+            status: includeStatus ? 'PENDING DELIVERY' : undefined
+        };
     }
 
     client.on('qr', (qr) => {
@@ -188,10 +200,7 @@ function createBot({ config, ordersStore }) {
         const user = ensureUserData(userId);
         user.displayName = msg._data.notifyName || "Customer";
 
-        const greetings = [
-            'hi', 'hello', 'hey', 'heyy', 'good morning', 'good afternoon', 'good evening',
-            "what's up", 'whats up', 'sup', 'yo', 'menu', 'hi there', 'hello there', 'hola', 'good night', 'greetings'
-        ];
+        const greetings = ['hi', 'hello', 'hey', 'heyy', 'good morning', 'good afternoon', 'good evening', "what's up", 'whats up', 'sup', 'yo', 'menu'];
         if (text === 'cancel' || text === 'stop') {
             resetUser(userId);
             await client.sendMessage(userId, 'Cancelled. Type "Hi" to start over.');
@@ -200,7 +209,14 @@ function createBot({ config, ordersStore }) {
         if (greetings.some(g => text.startsWith(g))) {
             resetUser(userId);
             await client.sendMessage(userId, 'Welcome to White Rose Interiors!');
-            await sendMainMenu(userId);
+            const poll = new Poll('How can we help you today?', [
+                '🛍️ Goods/Services',
+                '🧾 Manage Orders',
+                '📦 Get Order Status',
+                '☎️ Contact Support',
+                '❓ FAQ'
+            ]);
+            await client.sendMessage(userId, poll);
             return;
         }
 
@@ -223,17 +239,9 @@ function createBot({ config, ordersStore }) {
                 await client.sendMessage(userId, 'Please enter a positive number for width.');
                 return;
             }
-            const limits = getProductLimits(user.selectedProduct || 'illusion_cat3');
-            if (limits && (width < limits.minWidth || width > limits.maxWidth)) {
-                await client.sendMessage(userId, `Width must be between ${limits.minWidth}" and ${limits.maxWidth}". Please re-enter.`);
-                return;
-            }
             user.width = width;
             userState[userId] = 'waiting_for_height';
-            const heightPrompt = limits
-                ? `Enter Height (inches) between ${limits.minHeight}" and ${limits.maxHeight}":`
-                : 'Enter Height (inches):';
-            await client.sendMessage(userId, heightPrompt);
+            await client.sendMessage(userId, 'Enter Height (inches):');
             return;
         }
 
@@ -248,10 +256,8 @@ function createBot({ config, ordersStore }) {
             const productKey = user.selectedProduct || 'illusion_cat3';
             const result = calculatePrice(productKey, width, height);
             if (!result || result.error || result.price === undefined || result.price === null) {
-                await client.sendMessage(userId, result?.error || 'That size needs a manual quote.');
-                userState[userId] = 'manual_size_help';
-                const poll = new Poll('What would you like to do?', manualSizeHelpOptions);
-                await client.sendMessage(userId, poll);
+                await client.sendMessage(userId, result?.error || 'Size not available in standard list. Contacting support...');
+                userState[userId] = null;
                 return;
             }
 
@@ -291,7 +297,7 @@ function createBot({ config, ordersStore }) {
             await client.sendMessage(userId, '```' + receipt + '```');
 
             userState[userId] = 'quote_next_step';
-            const poll = new Poll('Add another item or finish?', addItemOptions);
+            const poll = new Poll('Add another item or finish?', ['Add another blind', 'Add another supply', 'Finish & get PDF']);
             await client.sendMessage(userId, poll);
             return;
         }
@@ -326,7 +332,7 @@ function createBot({ config, ordersStore }) {
             const totals = calculateCartTotals(user.cart);
             await client.sendMessage(userId, `Added to cart: ${quote.product}. Current total (incl. GCT): $${totals.total.toFixed(2)}`);
             userState[userId] = 'quote_next_step';
-            const poll = new Poll('Add another item or finish?', addItemOptions);
+            const poll = new Poll('Add another item or finish?', ['Add another blind', 'Add another supply', 'Finish & get PDF']);
             await client.sendMessage(userId, poll);
             return;
         }
@@ -376,7 +382,7 @@ function createBot({ config, ordersStore }) {
                         cart,
                         email: user.lastQuote.email,
                         displayName: user.displayName,
-                        phone: toPhone(userId),
+                        phone: userId.replace('@c.us', ''),
                         fulfillment: user.lastQuote.fulfillment,
                         includeStatus: false
                     });
@@ -389,9 +395,6 @@ function createBot({ config, ordersStore }) {
                         const mailed = await sendInvoiceEmail(order.email, order, pdfPath);
                         if (mailed) {
                             await client.sendMessage(userId, 'Estimate emailed to you.');
-                            userState[userId] = 'final_confirm';
-                            const confirmPoll = new Poll('Confirm order now?', confirmPurchaseOptions);
-                            await client.sendMessage(userId, confirmPoll);
                         } else {
                             await client.sendMessage(userId, 'Could not send email right now.');
                         }
@@ -400,10 +403,9 @@ function createBot({ config, ordersStore }) {
                     console.error('Immediate email send error', err);
                     await client.sendMessage(userId, 'Could not send email right now.');
                 }
-                if (userState[userId] !== 'final_confirm') {
-                    userState[userId] = 'waiting_for_fulfillment';
-                    await sendFulfillmentPoll(userId, 'How would you like to receive this?');
-                }
+                userState[userId] = 'waiting_for_fulfillment';
+                const poll = new Poll('How would you like to receive this?', ['Delivery (3-4 Days)', 'Pickup']);
+                await client.sendMessage(userId, poll);
             } else {
                 await client.sendMessage(userId, 'Please enter a valid email address.');
             }
@@ -421,7 +423,7 @@ function createBot({ config, ordersStore }) {
         const displayName = user.displayName || "Customer";
 
         if (option === 'Goods/Services') {
-            const subPoll = new Poll('Select a Category:', goodsCategoryOptions);
+            const subPoll = new Poll('Select a Category:', ['🪟 Blinds', '🧹 Cleaning Services', '🧴 Cleaning Supplies']);
             await client.sendMessage(userId, subPoll);
         }
         else if (option === 'Contact Support') {
@@ -445,79 +447,37 @@ function createBot({ config, ordersStore }) {
         else if (option === 'Manage Orders') {
             const pollData = buildManageOrderPoll(userId);
             if (!pollData) {
-                await client.sendMessage(userId, 'No upcoming appointments found to manage.');
+                await client.sendMessage(userId, 'No orders found to manage.');
             } else {
                 userState[userId] = 'manage_select_order';
                 user.manageOrders = pollData.orders;
-                const poll = new Poll('Select an order to manage:', pollData.options.map(opt => withEmoji('📋', opt)));
+                const poll = new Poll('Select an order to manage:', pollData.options);
                 await client.sendMessage(userId, poll);
             }
         }
         else if (option === 'FAQ') {
-            userState[userId] = 'faq_menu';
-            const faqPoll = new Poll('FAQ Topics:', faqMenuOptions);
-            await client.sendMessage(userId, faqPoll);
-        }
-
-        else if (userState[userId] === 'faq_menu') {
-            const faqs = {
-                hours: 'Hours: Mon-Fri 8:30 AM - 4:30 PM\nLocation: 30-32 Red Hills Road',
-                delivery: 'Delivery/Pickup: Typically 3-4 business days after confirmation. We will confirm scheduling with you.',
-                quotes: 'Quotes: Blinds include install + 15% GCT. Supplies are priced per unit/case with GCT added.',
-                orders: 'Orders: You can reschedule/cancel via Manage Orders or by replying here. PDFs are sent on request.',
-                payments: 'Payments: Bank transfer details are on your invoice. Ask your rep if you prefer cash/card.',
-                returns: 'Returns/Warranty: Contact support for defects or installation issues; we will assess and resolve.',
-                contact: `Support: Call us at ${config.company_phone} or reply here for help.`
-            };
-
-            if (optLower.includes('done')) {
-                resetUser(userId);
-                await client.sendMessage(userId, 'FAQ closed. Type "Hi" to start over.');
-                return;
-            }
-
-            if (optLower.includes('hours')) await client.sendMessage(userId, faqs.hours);
-            else if (optLower.includes('delivery') || optLower.includes('pickup')) await client.sendMessage(userId, faqs.delivery);
-            else if (optLower.includes('quote') || optLower.includes('pricing')) await client.sendMessage(userId, faqs.quotes);
-            else if (optLower.includes('order') || optLower.includes('change')) await client.sendMessage(userId, faqs.orders);
-            else if (optLower.includes('payment')) await client.sendMessage(userId, faqs.payments);
-            else if (optLower.includes('return') || optLower.includes('warranty')) await client.sendMessage(userId, faqs.returns);
-            else if (optLower.includes('contact')) await client.sendMessage(userId, faqs.contact);
-            else await client.sendMessage(userId, 'Please choose a listed FAQ topic.');
-
-            const faqPoll = new Poll('FAQ Topics:', faqMenuOptions);
-            await client.sendMessage(userId, faqPoll);
-            return;
-        }
-
-        else if (userState[userId] === 'manual_size_help') {
-            if (optLower.includes('support')) {
-                const contactMsg = [
-                    'Support options:',
-                    '- Reply here for chat (we respond ASAP during business hours).',
-                    `- Call us: ${config.company_phone}`,
-                    '- Email: support@whiteroseinteriors.com (include your order # if you have one).'
-                ].join('\n');
-                await client.sendMessage(userId, contactMsg);
-                resetUser(userId);
-            } else if (optLower.includes('enter another')) {
-                userState[userId] = 'waiting_for_width';
-                await client.sendMessage(userId, 'Enter Width (inches):');
-            } else {
-                resetUser(userId);
-                await client.sendMessage(userId, 'Restarting. How can we help you today?');
-                await sendMainMenu(userId);
-            }
-            return;
+            const faq = [
+                '*FAQ*',
+                '',
+                'Hours: Mon-Fri 8:30 AM - 4:30 PM',
+                'Location: 30-32 Red Hills Road',
+                'Delivery/Pickup: Typically 3-4 business days after confirmation',
+                'Quotes: Blinds include install + GCT; supplies are priced per unit/case with GCT',
+                'Orders: You can reschedule/cancel via Manage Orders or reply here',
+                'Payments: Bank transfer details on invoice; confirm with your rep if you prefer cash/card',
+                'Returns/Warranty: Contact support for defects or installation issues',
+                'Support: Call us at ' + config.company_phone + ' or reply here for help'
+            ].join('\n');
+            await client.sendMessage(userId, faq);
         }
 
         else if (option === 'Blinds') {
-            const catPoll = new Poll('Choose a blinds family:', withEmojiList(blindCategoryLabels, '🪟'));
+            const catPoll = new Poll('Choose a blinds family:', blindCategoryLabels);
             await client.sendMessage(userId, catPoll);
         }
         else if (option === 'Cleaning Services') {
             userState[userId] = 'select_cleaning_service';
-            const poll = new Poll('Select a cleaning service:', withEmojiList(cleaningServiceOptions, '🧼'));
+            const poll = new Poll('🧹 Select a cleaning service:', cleaningServiceOptions.map(s => `🪣 ${s}`));
             await client.sendMessage(userId, poll);
         }
         else if (option === 'Cleaning Supplies') {
@@ -526,7 +486,7 @@ function createBot({ config, ordersStore }) {
                 await client.sendMessage(userId, 'Please leave a message describing what you need.');
             } else {
                 userState[userId] = 'select_supply_category';
-                const poll = new Poll('Select a supply category:', withEmojiList(supplyCategories.map(c => c.label), '📦'));
+                const poll = new Poll('Select a supply category:', supplyCategories.map(c => c.label));
                 await client.sendMessage(userId, poll);
             }
         }
@@ -534,7 +494,7 @@ function createBot({ config, ordersStore }) {
         else if (blindCategoryLabels.map(l => l.toLowerCase()).includes(optLower)) {
             const prods = getCategoryProducts(option);
             const prodLabels = prods.map(p => p.label);
-            const poll = new Poll('Select a product:', withEmojiList(prodLabels, '🪟'));
+            const poll = new Poll('Select a product:', prodLabels);
             await client.sendMessage(userId, poll);
         }
         else if (productOptions.find(p => p.label.toLowerCase() === optLower)) {
@@ -543,11 +503,7 @@ function createBot({ config, ordersStore }) {
             data.selectedProduct = chosen.key;
             data.displayName = displayName;
             userState[userId] = 'waiting_for_width';
-            const limits = getProductLimits(chosen.key);
-            const prompt = limits
-                ? `Enter Width (inches) between ${limits.minWidth}" and ${limits.maxWidth}":`
-                : 'Enter Width (inches):';
-            await client.sendMessage(userId, prompt);
+            await client.sendMessage(userId, 'Enter Width (inches):');
         }
         else if (Object.entries(config.products).find(([k, v]) => v.name.toLowerCase() === optLower)) {
             const found = Object.entries(config.products).find(([k, v]) => v.name.toLowerCase() === optLower);
@@ -555,11 +511,7 @@ function createBot({ config, ordersStore }) {
             data.selectedProduct = found[0];
             data.displayName = displayName;
             userState[userId] = 'waiting_for_width';
-            const limits = getProductLimits(found[0]);
-            const prompt = limits
-                ? `Enter Width (inches) between ${limits.minWidth}" and ${limits.maxWidth}":`
-                : 'Enter Width (inches):';
-            await client.sendMessage(userId, prompt);
+            await client.sendMessage(userId, 'Enter Width (inches):');
         }
 
         else if (userState[userId] === 'select_supply_category') {
@@ -578,7 +530,7 @@ function createBot({ config, ordersStore }) {
             userState[userId] = 'select_supply_item';
             const itemOptions = category.items.map(i => i.name);
             await client.sendMessage(userId, 'Pick a supply item:');
-            const poll = new Poll(`Items in ${category.label}:`, withEmojiList(itemOptions, '🧴'));
+            const poll = new Poll(`Items in ${category.label}:`, itemOptions);
             await client.sendMessage(userId, poll);
         }
         else if (userState[userId] === 'select_supply_item') {
@@ -592,8 +544,8 @@ function createBot({ config, ordersStore }) {
             if (selected.casePrice && selected.casePrice > 0) {
                 userState[userId] = 'supply_pack_choice';
                 const poll = new Poll('How would you like to purchase?', [
-                    withEmoji('🧍', `Per Unit ($${selected.unitPrice})`),
-                    withEmoji('📦', `Case ($${selected.casePrice})`)
+                    `Per Unit ($${selected.unitPrice})`,
+                    `Case ($${selected.casePrice})`
                 ]);
                 await client.sendMessage(userId, poll);
             } else {
@@ -607,7 +559,7 @@ function createBot({ config, ordersStore }) {
                 await client.sendMessage(userId, 'Please pick one of the listed cleaning services.');
                 return;
             }
-            await client.sendMessage(userId, 'Carpet, Chair, and Rug cleaning pricing is currently unavailable. A rep will follow up.');
+            await client.sendMessage(userId, `${option} pricing is currently unavailable. A rep will follow up.`);
             resetUser(userId);
         }
         else if (userState[userId] === 'supply_pack_choice') {
@@ -638,7 +590,7 @@ function createBot({ config, ordersStore }) {
         }
         else if (option === 'No, thanks') {
             userState[userId] = 'final_confirm';
-            const confirmPoll = new Poll('Send email or confirm purchase?', confirmOrderOptions);
+            const confirmPoll = new Poll('Send email or confirm order?', ['Send email', 'Confirm Order', 'Cancel']);
             await client.sendMessage(userId, confirmPoll);
         }
 
@@ -652,7 +604,7 @@ function createBot({ config, ordersStore }) {
                 userState[userId] = 'awaiting_cleaning_supply_message';
             } else {
                 userState[userId] = 'select_supply_category';
-                const poll = new Poll('Select a supply category:', withEmojiList(supplyCategories.map(c => c.label), '📦'));
+                const poll = new Poll('Select a supply category:', supplyCategories.map(c => c.label));
                 await client.sendMessage(userId, poll);
             }
         }
@@ -668,7 +620,7 @@ function createBot({ config, ordersStore }) {
                 cart,
                 email: user.lastQuote?.email,
                 displayName,
-                phone: toPhone(userId),
+                phone: userId.replace('@c.us', ''),
                 fulfillment: user.lastQuote?.fulfillment,
                 includeStatus: false
             });
@@ -687,7 +639,7 @@ function createBot({ config, ordersStore }) {
             }
 
             userState[userId] = 'final_confirm';
-            const confirmPoll = new Poll('Send email or confirm order?', finalConfirmOrderOptions);
+            const confirmPoll = new Poll('Send email or confirm order?', ['Send email', 'Confirm Order', 'Cancel']);
             await client.sendMessage(userId, confirmPoll);
         }
 
@@ -695,18 +647,12 @@ function createBot({ config, ordersStore }) {
             if (option === 'Send email') {
                 userState[userId] = 'typing_email';
                 await client.sendMessage(userId, 'Please type your email address:');
-            } else if (option === 'Confirm Purchase' || option === 'Confirm Order') {
-                userState[userId] = 'choose_fulfillment';
-                await sendFulfillmentPoll(userId, 'Choose delivery method to place order:');
-            } else if (option === 'Cancel' || option.toLowerCase() === 'no') {
+            } else if (option === 'Confirm Order') {
+                await placeOrder({ userId, user, displayName });
+            } else if (option === 'Cancel') {
                 await client.sendMessage(userId, 'Cancelled. Type "Hi" to start over.');
                 resetUser(userId);
             }
-        }
-        else if (userState[userId] === 'choose_fulfillment' && (option === 'Delivery (3-4 Days)' || option === 'Pickup')) {
-            if (user.lastQuote) user.lastQuote.fulfillment = option;
-            user.fulfillment = option;
-            await placeOrder({ userId, user, displayName });
         }
 
         else if (option === 'Confirm Order') {
@@ -716,8 +662,7 @@ function createBot({ config, ordersStore }) {
                 resetUser(userId);
                 return;
             }
-            userState[userId] = 'choose_fulfillment';
-            await sendFulfillmentPoll(userId, 'Choose delivery method to place order:');
+            await placeOrder({ userId, user, displayName: user.displayName || "Customer" });
         }
         else if (option === 'Cancel') {
             await client.sendMessage(userId, 'Order cancelled. Type "Hi" to start over.');
@@ -731,27 +676,9 @@ function createBot({ config, ordersStore }) {
                 return;
             }
             const id = match[1];
-            const order = (user.manageOrders || []).find(o => String(o.id) === id);
-            if (!order) {
-                await client.sendMessage(userId, 'Could not find that order. Please pick again.');
-                return;
-            }
             user.manageOrderId = id;
-            user.manageCurrentOrder = order;
             userState[userId] = 'manage_action';
-            const details = [
-                `Order #${order.id}`,
-                `Status: ${order.status || 'Pending'}`,
-                `Scheduled: ${order.scheduledDate || 'Not set'} ${order.scheduleTime || ''}`.trim(),
-                `Fulfillment: ${order.fulfillment || 'N/A'}`,
-                `Total: $${order.price || '0.00'}`
-            ].join('\n');
-            await client.sendMessage(userId, details);
-            const poll = new Poll(`Order #${id}: choose an action`, [
-                withEmoji('📅', 'Reschedule'),
-                withEmoji('❌', 'Cancel'),
-                withEmoji('📋', 'Back to orders')
-            ]);
+            const poll = new Poll(`Order #${id}: choose an action`, ['Reschedule', 'Cancel']);
             await client.sendMessage(userId, poll);
         }
         else if (userState[userId] === 'manage_action') {
@@ -766,22 +693,8 @@ function createBot({ config, ordersStore }) {
                 await client.sendMessage(userId, 'Enter new date (YYYY-MM-DD):');
             } else if (option === 'Cancel') {
                 userState[userId] = 'manage_cancel_confirm';
-                const poll = new Poll(`Cancel order #${id}?`, [
-                    withEmoji('✅', 'Yes, cancel'),
-                    withEmoji('❌', 'No')
-                ]);
+                const poll = new Poll(`Cancel order #${id}?`, ['Yes, cancel', 'No']);
                 await client.sendMessage(userId, poll);
-            } else if (option === 'Back to orders') {
-                userState[userId] = 'manage_select_order';
-                const pollData = buildManageOrderPoll(userId);
-                if (!pollData) {
-                    await client.sendMessage(userId, 'No upcoming appointments found to manage.');
-                    resetUser(userId);
-                } else {
-                    user.manageOrders = pollData.orders;
-                    const poll = new Poll('Select an order to manage:', pollData.options.map(opt => withEmoji('📋', opt)));
-                    await client.sendMessage(userId, poll);
-                }
             }
         }
         else if (userState[userId] === 'manage_cancel_confirm') {

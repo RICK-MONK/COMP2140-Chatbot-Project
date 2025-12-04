@@ -9,6 +9,8 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 
+const formatMoney = (value) => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+
 function drawRow(doc, y, columns) {
     const colWidths = [180, 160, 80, 80]; // ACTIVITY | DESC | RATE | AMOUNT
     let x = 50;
@@ -78,30 +80,38 @@ function generateInvoicePDF(order, filename, docType = "INVOICE") {
         let y = tableTop + 35;
         doc.font('Helvetica');
 
+        const items = (order.items && order.items.length)
+            ? order.items
+            : [{
+                width: order.width || 0,
+                height: order.height || 0,
+                product: order.product || "Custom Blind",
+                priceBreakdown: order.priceBreakdown || {}
+            }];
+
         const basePrice = parseFloat(order.priceBreakdown?.base || 0);
         const installPrice = parseFloat(order.priceBreakdown?.install || 0);
-        const subtotal = parseFloat(order.priceBreakdown?.subtotal || 0);
-        const gct = parseFloat(order.priceBreakdown?.gct || 0);
-        const total = parseFloat(order.price || 0);
+        const subtotal = parseFloat(order.priceBreakdown?.subtotal || basePrice + installPrice);
+        const gct = parseFloat(order.priceBreakdown?.gct || subtotal * 0.15);
+        const total = parseFloat(order.price || subtotal + gct);
 
-        const safeWidth = order.width || 0;
-        const safeHeight = order.height || 0;
-
-        const basePriceTxt = basePrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
-        const installPriceTxt = installPrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
-
-        y += drawRow(doc, y, [
-            order.product || "Custom Blind",
-            `Size: ${safeWidth}" x ${safeHeight}"`,
-            basePriceTxt,
-            basePriceTxt
-        ]);
+        items.forEach(item => {
+            const base = Number(item.priceBreakdown?.base || 0);
+            const qtyLabel = item.quantity ? `Qty: ${item.quantity}` : '';
+            const description = item.description || `Size: ${item.width || 0}" x ${item.height || 0}"`;
+            y += drawRow(doc, y, [
+                item.product || "Custom Blind",
+                [description, qtyLabel].filter(Boolean).join(' | '),
+                formatMoney(base),
+                formatMoney(base)
+            ]);
+        });
 
         y += drawRow(doc, y, [
             'Installation',
             'Standard Install Fee',
-            installPriceTxt,
-            installPriceTxt
+            formatMoney(installPrice),
+            formatMoney(installPrice)
         ]);
 
         doc.moveTo(50, y).lineTo(550, y).stroke();
@@ -110,15 +120,15 @@ function generateInvoicePDF(order, filename, docType = "INVOICE") {
         // --- 5. TOTALS ---
         doc.font('Helvetica-Bold');
         y += drawRow(doc, y, [
-            '', '', 'SUBTOTAL', subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})
+            '', '', 'SUBTOTAL', formatMoney(subtotal)
         ]);
         y += drawRow(doc, y, [
-            '', '', 'TAX (GCT 15%)', gct.toLocaleString(undefined, {minimumFractionDigits: 2})
+            '', '', 'TAX (GCT 15%)', formatMoney(gct)
         ]);
 
         doc.fontSize(12).font('Helvetica-Bold');
         y += drawRow(doc, y, [
-            '', '', 'TOTAL', 'JMD ' + total.toLocaleString(undefined, {minimumFractionDigits: 2})
+            '', '', 'TOTAL', 'JMD ' + formatMoney(total)
         ]);
         y += 20;
 

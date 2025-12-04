@@ -7,7 +7,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>White Rose Command Center</title>
     
     <!-- Bootstrap CSS -->
@@ -25,6 +25,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="text-center mb-4">
+            <img src="images/logo.png" alt="White Rose Interiors" class="img-fluid mb-2" style="max-width: 120px;">
             <h4><i class="fa-solid fa-layer-group"></i> White Rose</h4>
             <p class="text-muted text-small">Admin Console v4.1</p>
         </div>
@@ -136,12 +137,15 @@
                             <option value="CANCELLED">Cancelled</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <label for="dateFilter" class="visually-hidden">Filter by Date</label>
-                        <input type="date" id="dateFilter" class="form-control" onchange="filterOrders()" title="Filter by Date">
-                    </div>
+                <div class="col-md-3">
+                    <label for="dateFilter" class="visually-hidden">Filter by Date</label>
+                    <input type="date" id="dateFilter" class="form-control" onchange="filterOrders()" title="Filter by Date">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-outline-secondary w-100" onclick="downloadReport()"><i class="fa-solid fa-file-arrow-down"></i> Download Report</button>
                 </div>
             </div>
+        </div>
 
             <!-- Data Table -->
             <div class="table-card">
@@ -154,6 +158,7 @@
                                 <th>Customer</th>
                                 <th>Product Details</th>
                                 <th>Schedule</th>
+                                <th>Reminder</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Notify</th>

@@ -1,0 +1,62 @@
+{
+  "categories": [
+    {
+      "key": "chemicals",
+      "label": "Chemicals",
+      "items": [
+        { "sku": "CH-001", "name": "Ultra-Blue Glass Cleaner", "category": "Chemicals", "unitSize": "32 oz", "unitPrice": 697.50, "casePrice": 7440.00 },
+        { "sku": "CH-002", "name": "Citrus Degreaser Concentrate", "category": "Chemicals", "unitSize": "1 Gal", "unitPrice": 2943.45, "casePrice": 10850.00 },
+        { "sku": "CH-003", "name": "Pine Multi-Surface Cleaner", "category": "Chemicals", "unitSize": "1 Gal", "unitPrice": 1937.50, "casePrice": 6975.00 },
+        { "sku": "CH-004", "name": "Hospital Grade Disinfectant", "category": "Chemicals", "unitSize": "1 Gal", "unitPrice": 3873.45, "casePrice": 14725.00 },
+        { "sku": "CH-005", "name": "Bowl Brite Toilet Cleaner", "category": "Chemicals", "unitSize": "32 oz", "unitPrice": 813.75, "casePrice": 9300.00 },
+        { "sku": "CH-006", "name": "Bleach (Industrial Strength)", "category": "Chemicals", "unitSize": "1 Gal", "unitPrice": 1083.45, "casePrice": 3875.00 },
+        { "sku": "CH-007", "name": "Stainless Steel Polish", "category": "Chemicals", "unitSize": "16 oz", "unitPrice": 1398.45, "casePrice": 15500.00 }
+      ]
+    },
+    {
+      "key": "tools_equipment",
+      "label": "Tools & Equipment",
+      "items": [
+        { "sku": "TL-101", "name": "Heavy Duty Corn Broom", "category": "Tools & Equipment", "unitSize": "Each", "unitPrice": 2247.50, "casePrice": 20925.00 },
+        { "sku": "TL-102", "name": "Angle Broom with Dustpan", "category": "Tools & Equipment", "unitSize": "Set", "unitPrice": 2480.00, "casePrice": 23250.00 },
+        { "sku": "TL-103", "name": "Microfiber Mop Kit (18\")", "category": "Tools & Equipment", "unitSize": "Kit", "unitPrice": 5423.45, "casePrice": null },
+        { "sku": "TL-104", "name": "Cotton Mop Head (24 oz)", "category": "Tools & Equipment", "unitSize": "Each", "unitPrice": 1317.50, "casePrice": 13950.00 },
+        { "sku": "TL-105", "name": "Yellow Mop Bucket & Wringer", "category": "Tools & Equipment", "unitSize": "35 qt", "unitPrice": 10075.00, "casePrice": null },
+        { "sku": "TL-106", "name": "Microfiber Cloths (Blue)", "category": "Tools & Equipment", "unitSize": "12 Pack", "unitPrice": 2478.45, "casePrice": 23250.00 },
+        { "sku": "TL-107", "name": "Scrub Sponges (Heavy Duty)", "category": "Tools & Equipment", "unitSize": "6 Pack", "unitPrice": 773.45, "casePrice": 6975.00 },
+        { "sku": "TL-108", "name": "Extendable Duster", "category": "Tools & Equipment", "unitSize": "Each", "unitPrice": 2013.45, "casePrice": 18600.00 }
+      ]
+    },
+    {
+      "key": "paper_goods",
+      "label": "Paper Goods",
+      "items": [
+        { "sku": "PG-201", "name": "Jumbo Toilet Tissue Rolls", "category": "Paper Goods", "unitSize": "12 Rolls", "unitPrice": 4960.00, "casePrice": null },
+        { "sku": "PG-202", "name": "Multi-Fold Hand Towels", "category": "Paper Goods", "unitSize": "4000/Case", "unitPrice": 6587.50, "casePrice": 6587.50 },
+        { "sku": "PG-203", "name": "Kitchen Paper Towels", "category": "Paper Goods", "unitSize": "30 Rolls", "unitPrice": 5890.00, "casePrice": null },
+        { "sku": "PG-204", "name": "Trash Bags 13 Gal (Kitchen)", "category": "Paper Goods", "unitSize": "100 Ct", "unitPrice": 2943.45, "casePrice": 13175.00 },
+        { "sku": "PG-205", "name": "Trash Bags 55 Gal (Drum)", "category": "Paper Goods", "unitSize": "50 Ct", "unitPrice": 4648.45, "casePrice": 17050.00 }
+      ]
+    },
+    {
+      "key": "safety",
+      "label": "Safety & PPE",
+      "items": [
+        { "sku": "SF-301", "name": "Nitrile Gloves (M/L/XL)", "category": "Safety & PPE", "unitSize": "100 Box", "unitPrice": 2247.50, "casePrice": 20150.00 },
+        { "sku": "SF-302", "name": "Yellow Rubber Gloves", "category": "Safety & PPE", "unitSize": "12 Pairs", "unitPrice": 2790.00, "casePrice": null },
+        { "sku": "SF-303", "name": "Wet Floor Sign", "category": "Safety & PPE", "unitSize": "Each", "unitPrice": 1858.45, "casePrice": 10075.00 },
+        { "sku": "SF-304", "name": "Safety Goggles", "category": "Safety & PPE", "unitSize": "Each", "unitPrice": 852.50, "casePrice": 7750.00 }
+      ]
+    },
+    {
+      "key": "cleaning_services",
+      "label": "Cleaning Services",
+      "items": [
+        { "sku": "SV-001", "name": "Sofa Cleaning (per seat)", "category": "Cleaning Services", "unitSize": "Per Seat", "unitPrice": 3500, "casePrice": null, "available": false, "note": "Not currently available" },
+        { "sku": "SV-002", "name": "Carpet Cleaning (per room)", "category": "Cleaning Services", "unitSize": "Per Room", "unitPrice": 5000, "casePrice": null, "available": false, "note": "Not currently available" },
+        { "sku": "SV-003", "name": "Mold Treatment", "category": "Cleaning Services", "unitSize": "Per Job", "unitPrice": 7500, "casePrice": null, "available": false, "note": "Not currently available" },
+        { "sku": "SV-004", "name": "Deep Sanitization", "category": "Cleaning Services", "unitSize": "Per Job", "unitPrice": 8200, "casePrice": null, "available": false, "note": "Not currently available" }
+      ]
+    }
+  ]
+}
